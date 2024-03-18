@@ -1,10 +1,41 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { formSchema, formSchemaType } from "@/schemas/form";
+import { formSchema, formSchemaType, formSchemaWithoutPageName, formSchemaWithoutPageNameType } from "@/schemas/form";
 import { currentUser } from "@clerk/nextjs";
+import { redirect } from 'next/navigation'
+
+
 
 class UserNotFoundErr extends Error { }
+
+export async function handleFormSubmit(pageId: number, formData: FormData) {
+  console.log("Form Submitting");
+
+  const name = formData.get("name");
+  const description = formData.get("description");
+
+  console.log({ name, description });
+
+  if (!pageId || typeof pageId !== 'number') {
+    return {
+      errors: "Page id must be number"
+    }
+  }
+
+  const validatedFields = formSchemaWithoutPageName.safeParse({ name, description })
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+    }
+  }
+
+  const formId = await CreateForm(validatedFields.data);
+  const pageFormId = await CreatePageFormBridge(pageId, formId);
+
+  redirect(`/builder/${formId}`)
+}
 
 export async function GetFormStats() {
   const user = await currentUser();
@@ -41,8 +72,36 @@ export async function GetFormStats() {
   };
 }
 
-export async function CreateForm(data: formSchemaType) {
+export async function CreatePage(data: formSchemaType) {
   const validation = formSchema.safeParse(data);
+  if (!validation.success) {
+    throw new Error("form not valid");
+  }
+
+  const user = await currentUser();
+  if (!user) {
+    throw new UserNotFoundErr();
+  }
+
+  const { pageName: name } = data;
+
+  const page = await prisma.page.create({
+    data: {
+      userId: user.id,
+      name,
+    },
+  });
+
+  if (!page) {
+    throw new Error("something went wrong");
+  }
+
+  return page.id;
+}
+
+
+export async function CreateForm(data: formSchemaWithoutPageNameType) {
+  const validation = formSchemaWithoutPageName.safeParse(data);
   if (!validation.success) {
     throw new Error("form not valid");
   }
@@ -69,6 +128,48 @@ export async function CreateForm(data: formSchemaType) {
   return form.id;
 }
 
+
+export async function CreatePageFormBridge(pageId: number, formId: number) {
+
+  const user = await currentUser();
+  if (!user) {
+    throw new UserNotFoundErr();
+  }
+
+  const pageFormBridge = await prisma.formsinPages.create({
+    data: {
+      pageId,
+      formId,
+    },
+  });
+
+  if (!pageFormBridge) {
+    throw new Error("something went wrong");
+  }
+
+  return pageFormBridge.id;
+}
+
+
+export async function GetPages() {
+  const user = await currentUser();
+  if (!user) {
+    throw new UserNotFoundErr();
+  }
+
+  const pages = await prisma.page.findMany({
+    where: {
+      userId: user.id,
+    },
+    orderBy: {
+      createdAt: "desc",
+    }
+  });
+
+
+  return pages;
+}
+
 export async function GetForms() {
   const user = await currentUser();
   if (!user) {
@@ -83,6 +184,34 @@ export async function GetForms() {
       createdAt: "desc",
     },
   });
+}
+
+export async function GetFormsByPageId(pageId: number) {
+  const user = await currentUser();
+  if (!user) {
+    throw new UserNotFoundErr();
+  }
+
+  const pageData = await prisma.page.findFirst({
+    where: {
+      userId: user.id,
+      id: pageId
+    },
+    include: {
+      forms: {
+        include: {
+          form: true
+        }
+      }
+    }
+  });
+
+  if (pageData == null) {
+    return null;
+  }
+
+  return pageData.forms.map(form => form.form);
+
 }
 
 export async function GetFormById(id: number) {

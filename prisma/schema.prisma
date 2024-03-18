@@ -11,6 +11,24 @@ datasource db {
   directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
 }
 
+model Page {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  createdAt DateTime @default(now())
+  name      String
+
+  forms     FormsinPages[]
+}
+
+model FormsinPages {
+  id        Int      @id @default(autoincrement())
+  pageId    Int
+  formId    Int
+  page    Page @relation(fields: [pageId], references: [id])
+  form    Form @relation(fields: [formId], references: [id])
+  createdAt DateTime @default(now())
+}
+
 model Form {
   id          Int      @id @default(autoincrement())
   userId      String
@@ -25,6 +43,8 @@ model Form {
 
   shareURL        String            @unique @default(uuid())
   FormSubmissions FormSubmissions[]
+
+  Pages FormsinPages[]
 
   @@unique([name, userId])
 }
