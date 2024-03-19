@@ -100,10 +100,10 @@ function FormSubmitComponent({ formUrl, content }: { content: FormElementInstanc
           disabled={pending}
         >
           {!pending && (
-            <>
+            <div>
               <HiCursorClick className="mr-2" />
               Submit
-            </>
+            </div>
           )}
           {pending && <ImSpinner2 className="animate-spin" />}
         </Button>

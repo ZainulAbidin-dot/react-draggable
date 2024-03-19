@@ -163,7 +163,7 @@ function FormCard({ page }: { page: Page }) {
       <CardFooter>
         <Button asChild variant={"secondary"} className="w-full mt-2 text-md gap-4">
           <Link href={`/application/${page.id}`}>
-            View Page <BiRightArrowAlt />
+            View Application <BiRightArrowAlt />
           </Link>
         </Button>
       </CardFooter>
@@ -182,10 +182,10 @@ export default function Home() {
 
   return (
     <div className="container pt-4">
-      <Suspense fallback={<StatsCards loading={true} />}>
+      {/* <Suspense fallback={<StatsCards loading={true} />}>
         <CardStatsWrapper />
       </Suspense>
-      <Separator className="my-6" />
+      <Separator className="my-6" /> */}
       <h2 className="text-4xl font-bold col-span-2">Pages</h2>
       <Separator className="my-6" />
       <div className="grid gric-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

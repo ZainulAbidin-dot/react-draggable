@@ -2203,6 +2203,13 @@
   "resolved" "https://registry.npmjs.org/fraction.js/-/fraction.js-4.3.6.tgz"
   "version" "4.3.6"
 
+"framer-motion@^11.0.15":
+  "integrity" "sha512-bQzPYHL66lO4SLoAHqWy5v1Pd4TDwYs8I16+ZlsoZjRn2MdUiygb8nyl9kcI/JjhcErSBq2XLaha4F5knn72ow=="
+  "resolved" "https://registry.npmjs.org/framer-motion/-/framer-motion-11.0.15.tgz"
+  "version" "11.0.15"
+  dependencies:
+    "tslib" "^2.4.0"
+
 "fs.realpath@^1.0.0":
   "integrity" "sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw=="
   "resolved" "https://registry.npmjs.org/fs.realpath/-/fs.realpath-1.0.0.tgz"
