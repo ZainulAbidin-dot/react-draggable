@@ -3,12 +3,18 @@
 import React, { useState } from "react";
 import DesignerSidebar from "./DesignerSidebar";
 import { DragEndEvent, useDndMonitor, useDraggable, useDroppable } from "@dnd-kit/core";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
 import useDesigner from "./hooks/useDesigner";
 import { ElementsType, FormElementInstance, FormElements } from "./FormElements";
 import { idGenerator } from "@/lib/idGenerator";
 import { Button } from "./ui/button";
 import { BiSolidTrash } from "react-icons/bi";
+
+// For Resizeable
+import { useEffect } from "react";
+import interact from "interactjs"; // Import the interact.js library
 
 function Designer() {
   const { elements, addElement, selectedElement, setSelectedElement, removeElement } = useDesigner();
@@ -100,6 +106,7 @@ function Designer() {
     },
   });
 
+  const [toggleBtn, setToggleBtn] = useState(0);
   return (
     <div className="flex w-full h-full">
       <div
@@ -125,20 +132,61 @@ function Designer() {
             </div>
           )}
           {elements.length > 0 && (
-            <div className="flex flex-col  w-full gap-2 p-4">
+            <div className="grid grid-cols-2  w-full gap-2 p-4">
               {elements.map((element) => (
-                <DesignerElementWrapper key={element.id} element={element} />
+                <DesignerElementWrapper key={element.id} toggleBtn={toggleBtn} element={element} />
               ))}
             </div>
           )}
         </div>
       </div>
-      <DesignerSidebar />
+      <>
+        <button
+          onClick={(e) => setToggleBtn(toggleBtn === 0 ? 1 : 0)}
+          className="border-l-2 border-muted bg-background p-7"
+        >
+          {toggleBtn === 0 ? "Resize" : "Drag"}
+        </button>
+
+        <DesignerSidebar />
+      </>
     </div>
   );
 }
 
-function DesignerElementWrapper({ element }: { element: FormElementInstance }) {
+function DesignerElementWrapper({ element, toggleBtn }: { element: FormElementInstance; toggleBtn: number }) {
+  // const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: element.id });
+
+  // const style = {
+  //   transition,
+  //   transform: CSS.Transform.toString(transform),
+  // };
+
+  // *************************** For Resizeable ****************************************
+  useEffect(() => {
+    interact(".resizable").resizable({
+      edges: { top: true, left: true, bottom: true, right: true },
+      listeners: {
+        move: function (event) {
+          let { x, y } = event.target.dataset;
+
+          x = (parseFloat(x) || 0) + event.deltaRect.left;
+          y = (parseFloat(y) || 0) + event.deltaRect.top;
+
+          Object.assign(event.target.style, {
+            width: `${event.rect.width}px`,
+            height: `${event.rect.height}px`,
+            transform: `translate(${x}px, ${y}px)`,
+          });
+
+          Object.assign(event.target.dataset, { x, y });
+        },
+      },
+    });
+  }, []); // Run this effect only once when the component mounts
+
+  // ************************************************************************************
+
   const { removeElement, selectedElement, setSelectedElement } = useDesigner();
 
   const [mouseIsOver, setMouseIsOver] = useState<boolean>(false);
@@ -169,58 +217,66 @@ function DesignerElementWrapper({ element }: { element: FormElementInstance }) {
     },
   });
 
+  // Conditional object for attributes and listeners
+  const dragAttributes = toggleBtn === 1 ? draggable.attributes : {};
+  const dragListeners = toggleBtn === 1 ? draggable.listeners : {};
+
   if (draggable.isDragging) return null; // temporary remove the element from designer
 
   const DesignerElement = FormElements[element.type].designerComponent;
+
   return (
-    <div
-      ref={draggable.setNodeRef}
-      {...draggable.listeners}
-      {...draggable.attributes}
-      className="relative h-[120px] flex flex-col text-foreground hover:cursor-pointer rounded-md ring-1 ring-accent ring-inset"
-      onMouseEnter={() => {
-        setMouseIsOver(true);
-      }}
-      onMouseLeave={() => {
-        setMouseIsOver(false);
-      }}
-      onClick={(e) => {
-        e.stopPropagation();
-        setSelectedElement(element);
-      }}
-    >
-      <div ref={topHalf.setNodeRef} className="absolute w-full h-1/2 rounded-t-md" />
-      <div ref={bottomHalf.setNodeRef} className="absolute  w-full bottom-0 h-1/2 rounded-b-md" />
-      {mouseIsOver && (
-        <>
-          <div className="absolute right-0 h-full">
-            <Button
-              className="flex justify-center h-full border rounded-md rounded-l-none bg-red-500"
-              variant={"outline"}
-              onClick={(e) => {
-                e.stopPropagation(); // avoid selection of element while deleting
-                removeElement(element.id);
-              }}
-            >
-              <BiSolidTrash className="h-6 w-6" />
-            </Button>
-          </div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse">
-            <p className="text-muted-foreground text-sm">Click for properties or drag to move</p>
-          </div>
-        </>
-      )}
-      {topHalf.isOver && <div className="absolute top-0 w-full rounded-md h-[7px] bg-primary rounded-b-none" />}
+    <>
       <div
-        className={cn(
-          "flex w-full h-[120px] items-center rounded-md bg-accent/40 px-4 py-2 pointer-events-none opacity-100",
-          mouseIsOver && "opacity-30",
-        )}
+        ref={draggable.setNodeRef}
+        {...dragListeners}
+        {...dragAttributes}
+        // style={{ ...style }}
+        className="resizable relative h-[120px] flex flex-col text-foreground hover:cursor-pointer rounded-md ring-1 ring-accent ring-inset"
+        onMouseEnter={() => {
+          setMouseIsOver(true);
+        }}
+        onMouseLeave={() => {
+          setMouseIsOver(false);
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          setSelectedElement(element);
+        }}
       >
-        <DesignerElement elementInstance={element} />
+        <div ref={topHalf.setNodeRef} className="absolute w-full h-1/2 rounded-t-md" />
+        <div ref={bottomHalf.setNodeRef} className="absolute  w-full bottom-0 h-1/2 rounded-b-md" />
+        {mouseIsOver && (
+          <>
+            <div className="absolute right-0 h-full">
+              <Button
+                className="flex justify-center h-full border rounded-md rounded-l-none bg-red-500"
+                variant={"outline"}
+                onClick={(e) => {
+                  e.stopPropagation(); // avoid selection of element while deleting
+                  removeElement(element.id);
+                }}
+              >
+                <BiSolidTrash className="h-6 w-6" />
+              </Button>
+            </div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse">
+              <p className="text-muted-foreground text-sm">Click for properties or drag to move</p>
+            </div>
+          </>
+        )}
+        {topHalf.isOver && <div className="absolute top-0 w-full rounded-md h-[7px] bg-primary rounded-b-none" />}
+        <div
+          className={cn(
+            "flex w-full h-[120px] items-center rounded-md bg-accent/40 px-4 py-2 pointer-events-none opacity-100",
+            mouseIsOver && "opacity-30",
+          )}
+        >
+          <DesignerElement elementInstance={element} />
+        </div>
+        {bottomHalf.isOver && <div className="absolute bottom-0 w-full rounded-md h-[7px] bg-primary rounded-t-none" />}
       </div>
-      {bottomHalf.isOver && <div className="absolute bottom-0 w-full rounded-md h-[7px] bg-primary rounded-t-none" />}
-    </div>
+    </>
   );
 }
 
