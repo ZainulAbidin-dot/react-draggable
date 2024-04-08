@@ -3,8 +3,6 @@
 import React, { useState } from "react";
 import DesignerSidebar from "./DesignerSidebar";
 import { DragEndEvent, useDndMonitor, useDraggable, useDroppable } from "@dnd-kit/core";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
 import useDesigner from "./hooks/useDesigner";
 import { ElementsType, FormElementInstance, FormElements } from "./FormElements";
