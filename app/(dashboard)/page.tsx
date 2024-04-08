@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { BiRightArrowAlt } from "react-icons/bi";
 
+// remove this function
 function CardStatsWrapper() {
   const [stats, setStats] = useState<any>(null);
 
